@@ -1,7 +1,7 @@
 package cmd
 
 type CMD struct {
-	name  string
-	logic func(interface{}) //
-	sub   map[string]*CMD   //sub cmd
+    Name   string
+    Logic  interface{} //
+    SubCMD []CMD       //sub cmd
 }
