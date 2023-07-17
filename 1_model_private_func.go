@@ -3,36 +3,18 @@ package cmd
 import (
     "errors"
     "fmt"
-    "os"
     "reflect"
     "sort"
     "strconv"
 )
 
-//AddCommand
-//logicFunc only support type func() func(in)
-func (cmd *cmdGroup) AddCommand(name string, logicFunc interface{}) {
-    err := cmd.checkInput(name, logicFunc)
-    if err != nil {
-        panic("[7omy1yyp7x] " + err.Error())
-    }
-    cmd.logicMap[name] = logicFunc
-}
-
-func (cmd *cmdGroup) AddGroup(sub *cmdGroup) {
-    for name, logic := range sub.logicMap {
-        cmd.AddCommand(name, logic)
-    }
-}
-
 func (cmd *cmdGroup) checkInput(name string, logic interface{}) error {
     if name == "" {
-        return errors.New("9wnkqp4lts")
+        return errors.New(`[piwt0yq1ms] name == ""`)
     }
     _, have := cmd.logicMap[name]
     if have {
-        return errors.New("bvrwop753a")
-
+        return errors.New("[bvrwop753a] duplicate command name [" + name + "]")
     }
     logicType := reflect.TypeOf(logic)
     if logicType.Kind() != reflect.Func {
@@ -70,42 +52,6 @@ func (cmd *cmdGroup) checkInput(name string, logic interface{}) error {
     }
 }
 
-func (cmd *cmdGroup) run(args []string) {
-
-}
-
-func (cmd *cmdGroup) Run() {
-    argLen := len(os.Args)
-    if argLen == 1 {
-        cmd.printHelp("")
-        return
-    }
-    subCommName := os.Args[1]
-    logic, ok := cmd.logicMap[subCommName]
-    if ok == false {
-        cmd.printSubCommand()
-        fmt.Println("command", "["+subCommName+"]", "not fund")
-        return
-    }
-    logicCal := reflect.ValueOf(logic)
-    logicType := reflect.TypeOf(logic)
-    if logicType.NumIn() == 0 {
-        logicCal.Call(nil)
-        return
-    }
-    argInfo, err := parseArgs(os.Args[1:])
-    if err != nil {
-        fmt.Println("kc9q6p24df", err)
-        return
-    }
-    valPtr, err := cmd.argsToParaObjValue(subCommName, argInfo)
-    if err != nil {
-        fmt.Println("o5181h5wtc", err)
-        return
-    }
-    logicCal.Call([]reflect.Value{*valPtr})
-}
-
 var _supportParaFieldKindMap = map[reflect.Kind]struct{}{
     reflect.Bool:    {},
     reflect.Int:     {},
@@ -127,7 +73,7 @@ func (cmd *cmdGroup) walkLogicParaGoodField(obj interface{}, cb func(int, reflec
     }
     logicType := reflect.TypeOf(obj)
     if logicType.Kind() != reflect.Func {
-        panic("ip5vk4xrq7")
+        panic("[ip5vk4xrq7] obj type expect func,get:[" + logicType.Kind().String() + "]")
     }
     paraType := logicType.In(0)
     fieldNum := paraType.NumField()
@@ -150,7 +96,7 @@ func (cmd *cmdGroup) walkLogicParaGoodField(obj interface{}, cb func(int, reflec
 func (cmd *cmdGroup) argsToParaObjValue(name string, argInfo *argsInfo) (*reflect.Value, error) {
     logic, ok := cmd.logicMap[name]
     if ok == false {
-        return nil, errors.New("f0qiv4u3nm")
+        return nil, errors.New("[f0qiv4u3nm] command [" + name + "] not found")
     }
     kvMap := map[string]string{}
     for _, kv := range argInfo.configSlice {
@@ -170,7 +116,6 @@ func (cmd *cmdGroup) argsToParaObjValue(name string, argInfo *argsInfo) (*reflec
         }
         fieldValue := value.FieldByName(fieldName)
         if fieldValue.CanSet() == false {
-            fmt.Println("92a4f9ace6")
             return
         }
         switch field.Type.Kind() {
@@ -179,7 +124,7 @@ func (cmd *cmdGroup) argsToParaObjValue(name string, argInfo *argsInfo) (*reflec
         case reflect.Bool:
             boolValue, err := strconv.ParseBool(val)
             if err != nil {
-                fmt.Println("o2wqdd40rn")
+                fmt.Println("[o2wqdd40rn] reflect set bool failed,name:[" + fieldName + "] val:[" + val + "]")
                 return
             }
             fieldValue.SetBool(boolValue)
@@ -190,7 +135,7 @@ func (cmd *cmdGroup) argsToParaObjValue(name string, argInfo *argsInfo) (*reflec
             reflect.Int64:
             int64Val, err := strconv.ParseInt(val, 10, 64)
             if err != nil {
-                fmt.Println("my5zy9yixy")
+                fmt.Println("[83vnn251yb] reflect set [" + field.Type.Kind().String() + "] failed,name:[" + fieldName + "] val:[" + val + "]")
                 return
             }
             fieldValue.SetInt(int64Val)
@@ -198,7 +143,7 @@ func (cmd *cmdGroup) argsToParaObjValue(name string, argInfo *argsInfo) (*reflec
             reflect.Float64:
             floatVal, err := strconv.ParseFloat(val, 64)
             if err != nil {
-                fmt.Println("swu45be03i")
+                fmt.Println("[vme00vhqiw] reflect set [" + field.Type.Kind().String() + "] failed,name:[" + fieldName + "] val:[" + val + "]")
                 return
             }
             fieldValue.SetFloat(floatVal)

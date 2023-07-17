@@ -1,6 +1,6 @@
 package cmd
 
-func NewGroup() *cmdGroup {
+func NewCmdGroup() *cmdGroup {
     return &cmdGroup{
         logicMap: map[string]interface{}{},
     }
