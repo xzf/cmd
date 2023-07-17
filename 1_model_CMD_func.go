@@ -5,18 +5,34 @@ import (
     "fmt"
     "os"
     "reflect"
+    "sort"
     "strconv"
-    "strings"
 )
 
-func (cmd CMD) checkInput(name string, logic interface{}) error {
+//AddCommand
+//logicFunc only support type func() func(in)
+func (cmd *cmdGroup) AddCommand(name string, logicFunc interface{}) {
+    err := cmd.checkInput(name, logicFunc)
+    if err != nil {
+        panic("[7omy1yyp7x] " + err.Error())
+    }
+    cmd.logicMap[name] = logicFunc
+}
+
+func (cmd *cmdGroup) AddGroup(sub *cmdGroup) {
+    for name, logic := range sub.logicMap {
+        cmd.AddCommand(name, logic)
+    }
+}
+
+func (cmd *cmdGroup) checkInput(name string, logic interface{}) error {
     if name == "" {
         return errors.New("9wnkqp4lts")
     }
-    for _, item := range cmd.SubCMD {
-        if item.Name == name {
-            return errors.New("bvrwop753a")
-        }
+    _, have := cmd.logicMap[name]
+    if have {
+        return errors.New("bvrwop753a")
+
     }
     logicType := reflect.TypeOf(logic)
     if logicType.Kind() != reflect.Func {
@@ -54,62 +70,40 @@ func (cmd CMD) checkInput(name string, logic interface{}) error {
     }
 }
 
-//func (cmd CMD) Sub(name string) *CMD {
-//    cmd.sub = append(cmd.sub, &CMD{
-//        name: name,
-//    })
-//}
+func (cmd *cmdGroup) run(args []string) {
 
-//func (cmd CMD) SetDescribe(desc string) {
-//
-//}
-
-func (cmd CMD) subMap() map[string]CMD {
-    result := map[string]CMD{}
-    for _, item := range cmd.SubCMD {
-        result[item.Name] = item
-    }
-    return result
 }
 
-func (cmd CMD) run(args []string) {
-    argLen := len(args)
-    if argLen == 0 {
-        cmd.printHelp()
+func (cmd *cmdGroup) Run() {
+    argLen := len(os.Args)
+    if argLen == 1 {
+        cmd.printHelp("")
         return
     }
-    firstArgStr := args[1]
-    isConfig := strings.HasPrefix(firstArgStr, "-")
-    if isConfig == false {
-        subMap := cmd.subMap()
-        subCmd, ok := subMap[firstArgStr]
-        if ok {
-            fmt.Println("389ah05kbb")
-            return
-        }
-        subCmd.run(args[1:])
+    subCommName := os.Args[1]
+    logic, ok := cmd.logicMap[subCommName]
+    if ok == false {
+        cmd.printSubCommand()
+        fmt.Println("command", "["+subCommName+"]", "not fund")
         return
     }
-    argInfo, err := parseArgs(args)
+    logicCal := reflect.ValueOf(logic)
+    logicType := reflect.TypeOf(logic)
+    if logicType.NumIn() == 0 {
+        logicCal.Call(nil)
+        return
+    }
+    argInfo, err := parseArgs(os.Args[1:])
     if err != nil {
         fmt.Println("kc9q6p24df", err)
         return
     }
-    valPtr, err := cmd.argsToParaObjValue(argInfo)
+    valPtr, err := cmd.argsToParaObjValue(subCommName, argInfo)
     if err != nil {
         fmt.Println("o5181h5wtc", err)
         return
     }
-    logicCal := reflect.ValueOf(cmd.Logic)
     logicCal.Call([]reflect.Value{*valPtr})
-}
-
-func (cmd CMD) Run() {
-    cmd.checkInput(cmd.Name, cmd.Logic)
-    for _, item := range cmd.SubCMD {
-        cmd.checkInput(item.Name, item.Logic)
-    }
-    cmd.run(os.Args)
 }
 
 var _supportParaFieldKindMap = map[reflect.Kind]struct{}{
@@ -122,16 +116,19 @@ var _supportParaFieldKindMap = map[reflect.Kind]struct{}{
 
 //checkParaFieldKind
 //return false mean not support
-func (cmd CMD) checkParaFieldKind(kind reflect.Kind) bool {
+func (cmd *cmdGroup) checkParaFieldKind(kind reflect.Kind) bool {
     _, ok := _supportParaFieldKindMap[kind]
     return ok
 }
 
-func (cmd CMD) walkLogicParaGoodField(cb func(int, reflect.StructField)) {
+func (cmd *cmdGroup) walkLogicParaGoodField(obj interface{}, cb func(int, reflect.StructField)) {
     if cb == nil {
         return
     }
-    logicType := reflect.TypeOf(cmd.Logic)
+    logicType := reflect.TypeOf(obj)
+    if logicType.Kind() != reflect.Func {
+        panic("ip5vk4xrq7")
+    }
     paraType := logicType.In(0)
     fieldNum := paraType.NumField()
     if fieldNum == 0 {
@@ -150,15 +147,19 @@ func (cmd CMD) walkLogicParaGoodField(cb func(int, reflect.StructField)) {
     }
 }
 
-func (cmd CMD) argsToParaObjValue(argInfo *argsInfo) (*reflect.Value, error) {
+func (cmd *cmdGroup) argsToParaObjValue(name string, argInfo *argsInfo) (*reflect.Value, error) {
+    logic, ok := cmd.logicMap[name]
+    if ok == false {
+        return nil, errors.New("f0qiv4u3nm")
+    }
     kvMap := map[string]string{}
     for _, kv := range argInfo.configSlice {
         kvMap[kv.k] = kv.v
     }
-    logicType := reflect.TypeOf(cmd.Logic)
+    logicType := reflect.TypeOf(logic)
     paraType := logicType.In(0)
     value := reflect.New(paraType)
-    cmd.walkLogicParaGoodField(func(index int, field reflect.StructField) {
+    cmd.walkLogicParaGoodField(logic, func(index int, field reflect.StructField) {
         fieldName := field.Name
         val, ok := kvMap[fieldName]
         if ok == false {
@@ -206,25 +207,36 @@ func (cmd CMD) argsToParaObjValue(argInfo *argsInfo) (*reflect.Value, error) {
     return &value, nil
 }
 
-func (cmd CMD) printHelp() {
-    if len(cmd.SubCMD) == 0 {
-        cmd.printLogicHelp()
+func (cmd *cmdGroup) printHelp(name string) {
+    if name == "" {
+        cmd.printSubCommand()
         return
     }
-    fmt.Println("sub command:")
-    for _, subCmd := range cmd.SubCMD {
-        fmt.Println(subCmd.Name)
+    logic, ok := cmd.logicMap[name]
+    if ok {
+        cmd.walkLogicParaGoodField(logic, func(_ int, field reflect.StructField) {
+            helpInfo := "-" + field.Name
+            cmdTagContent, ok := field.Tag.Lookup("cmd")
+            if ok == false || cmdTagContent == "" {
+                fmt.Println(helpInfo)
+                return
+            }
+            fmt.Println(helpInfo + "   " + cmdTagContent)
+        })
+        return
     }
+    fmt.Println("[51x4p0qiwr]", name)
+    // cmd.printSubCommand()
 }
 
-func (cmd CMD) printLogicHelp() {
-    cmd.walkLogicParaGoodField(func(_ int, field reflect.StructField) {
-        helpInfo := "-" + field.Name
-        cmdTagContent, ok := field.Tag.Lookup("cmd")
-        if ok == false || cmdTagContent == "" {
-            fmt.Println(helpInfo)
-            return
-        }
-        fmt.Println(helpInfo + "   " + cmdTagContent)
-    })
+func (cmd *cmdGroup) printSubCommand() {
+    var nameSlice []string
+    for name := range cmd.logicMap {
+        nameSlice = append(nameSlice, name)
+    }
+    sort.Strings(nameSlice)
+    fmt.Println("sub command:")
+    for _, name := range nameSlice {
+        fmt.Println(name)
+    }
 }

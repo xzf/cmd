@@ -1,17 +1,17 @@
 package main
 
-import "github.com/xzf/cmd"
+import (
+    "fmt"
+    "github.com/xzf/cmd"
+)
 
 func main() {
-    binTree := cmd.CMD{
-        Name: "A",
-        SubCMD: []cmd.CMD{
-            {
-                Name: "a",
-                Logic: func(i interface{}) {
-
-                },
-            },
-        },
-    }
+    comm := cmd.NewGroup()
+    comm.AddCommand("a", func() {
+        fmt.Println("aaa")
+    })
+    comm.AddCommand("b", func() {
+        fmt.Println("bbb")
+    })
+    comm.Run()
 }

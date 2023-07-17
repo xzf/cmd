@@ -1,7 +1,5 @@
 package cmd
 
-type CMD struct {
-    Name   string
-    Logic  interface{} //
-    SubCMD []CMD       //sub cmd
+type cmdGroup struct {
+    logicMap map[string]interface{}
 }
