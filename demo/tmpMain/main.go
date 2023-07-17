@@ -13,5 +13,11 @@ func main() {
     comm.AddCommand("b", func() {
         fmt.Println("bbb")
     })
+    type CReq struct {
+        ConfigFile string
+    }
+    comm.AddCommand("c", func(req CReq) {
+        fmt.Println("ccc", req.ConfigFile)
+    })
     comm.Run()
 }

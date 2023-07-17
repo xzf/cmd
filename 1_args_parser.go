@@ -2,10 +2,12 @@ package cmd
 
 import (
     "errors"
+    "fmt"
     "strings"
 )
 
 func parseArgs(argSlice []string) (*argsInfo, error) {
+    fmt.Println("???", argSlice)
     argLen := len(argSlice)
     if argLen == 0 {
         return nil, errors.New(`[4p0ahdq9u7] len(os.Args) == 0`)
@@ -20,6 +22,7 @@ func parseArgs(argSlice []string) (*argsInfo, error) {
     var oneKey string
     var oneValueSlice []string
     for ; ; index++ {
+        fmt.Println("[cnclo07hx8]", index, "["+oneKey+"]", oneValueSlice)
         if index >= argLen {
             break
         }
@@ -30,12 +33,13 @@ func parseArgs(argSlice []string) (*argsInfo, error) {
         isArgKey := strings.HasPrefix(thisStr, "-")
         if isArgKey {
             if oneKey != "" {
+                fmt.Println("???", oneValueSlice)
                 result.configSlice = append(result.configSlice, kv{
                     k: oneKey,
                     v: strings.Join(oneValueSlice, " "),
                 })
             }
-            oneKey = thisStr
+            oneKey = strings.TrimLeft(thisStr, "-")
             oneValueSlice = nil
             continue
         }

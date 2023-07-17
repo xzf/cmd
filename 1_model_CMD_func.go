@@ -159,11 +159,13 @@ func (cmd *cmdGroup) argsToParaObjValue(name string, argInfo *argsInfo) (*reflec
     logicType := reflect.TypeOf(logic)
     paraType := logicType.In(0)
     value := reflect.New(paraType)
+    if value.Type().Kind() == reflect.Ptr {
+        value = value.Elem()
+    }
     cmd.walkLogicParaGoodField(logic, func(index int, field reflect.StructField) {
         fieldName := field.Name
         val, ok := kvMap[fieldName]
         if ok == false {
-            fmt.Println("9hvmsalhpz")
             return
         }
         fieldValue := value.FieldByName(fieldName)
@@ -226,7 +228,6 @@ func (cmd *cmdGroup) printHelp(name string) {
         return
     }
     fmt.Println("[51x4p0qiwr]", name)
-    // cmd.printSubCommand()
 }
 
 func (cmd *cmdGroup) printSubCommand() {
