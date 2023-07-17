@@ -6,8 +6,9 @@ import (
     "reflect"
 )
 
-//Add
-//logicFunc only support type func() func(in)
+//Add add command
+//name: command name
+//logicFunc: only support type func() func(struct)
 func (cmd *cmdGroup) Add(name string, logicFunc interface{}) {
     err := cmd.checkInput(name, logicFunc)
     if err != nil {
@@ -16,6 +17,7 @@ func (cmd *cmdGroup) Add(name string, logicFunc interface{}) {
     cmd.logicMap[name] = logicFunc
 }
 
+//Run call in main package
 func (cmd *cmdGroup) Run() {
     argLen := len(os.Args)
     if argLen == 1 {
@@ -23,12 +25,28 @@ func (cmd *cmdGroup) Run() {
         return
     }
     subCommName := os.Args[1]
+    if subCommName == "--help" {
+        cmd.printSubCommand()
+        return
+    }
     logic, ok := cmd.logicMap[subCommName]
     if ok == false {
         cmd.printSubCommand()
         fmt.Println("command", "["+subCommName+"]", "not fund")
         return
     }
+    help := false
+    for _, item := range os.Args {
+        if item == "--help" {
+            help = true
+            break
+        }
+    }
+    if help {
+        cmd.printHelp(subCommName)
+        return
+    }
+
     logicCal := reflect.ValueOf(logic)
     logicType := reflect.TypeOf(logic)
     if logicType.NumIn() == 0 {

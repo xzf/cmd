@@ -8,6 +8,11 @@ import (
     "strconv"
 )
 
+const (
+    commandSetUpAutoComplete = "_set_up_auto_complete"
+    commandAutoComplete      = "_auto_complete"
+)
+
 func (cmd *cmdGroup) checkInput(name string, logic interface{}) error {
     if name == "" {
         return errors.New(`[piwt0yq1ms] name == ""`)
@@ -74,6 +79,9 @@ func (cmd *cmdGroup) walkLogicParaGoodField(obj interface{}, cb func(int, reflec
     logicType := reflect.TypeOf(obj)
     if logicType.Kind() != reflect.Func {
         panic("[ip5vk4xrq7] obj type expect func,get:[" + logicType.Kind().String() + "]")
+    }
+    if logicType.NumIn() == 0 {
+        return
     }
     paraType := logicType.In(0)
     fieldNum := paraType.NumField()
@@ -161,14 +169,15 @@ func (cmd *cmdGroup) printHelp(name string) {
     }
     logic, ok := cmd.logicMap[name]
     if ok {
+        fmt.Println("command [" + name + "]:")
         cmd.walkLogicParaGoodField(logic, func(_ int, field reflect.StructField) {
             helpInfo := "-" + field.Name
             cmdTagContent, ok := field.Tag.Lookup("cmd")
             if ok == false || cmdTagContent == "" {
-                fmt.Println(helpInfo)
+                fmt.Println("\t" + helpInfo)
                 return
             }
-            fmt.Println(helpInfo + "   " + cmdTagContent)
+            fmt.Println("\t" + helpInfo + " " + cmdTagContent)
         })
         return
     }
@@ -176,13 +185,22 @@ func (cmd *cmdGroup) printHelp(name string) {
 }
 
 func (cmd *cmdGroup) printSubCommand() {
+    fmt.Println("help: --help")
+    fmt.Println("sub command:")
+    for _, name := range cmd.subNameSlice() {
+        fmt.Println(name)
+    }
+}
+
+func (cmd *cmdGroup) subNameSlice() []string {
     var nameSlice []string
     for name := range cmd.logicMap {
+        if name == commandSetUpAutoComplete ||
+            name == commandAutoComplete {
+            continue
+        }
         nameSlice = append(nameSlice, name)
     }
     sort.Strings(nameSlice)
-    fmt.Println("sub command:")
-    for _, name := range nameSlice {
-        fmt.Println(name)
-    }
+    return nameSlice
 }

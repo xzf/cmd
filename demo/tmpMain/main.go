@@ -7,16 +7,23 @@ import (
 
 func main() {
     cg := cmd.NewCmdGroup()
-    cg.Add("a", func() {
+    cg.Add("aa", func() {
         fmt.Println("aaa")
     })
-    cg.Add("b", func() {
+    cg.Add("ab", func() {
+        fmt.Println("ab")
+    })
+    cg.Add("ac", func() {
+        fmt.Println("ac")
+    })
+    cg.Add("bb", func() {
         fmt.Println("bbb")
     })
     type CReq struct {
-        ConfigFile string
+        ConfigFile string `cmd:"config file path"`
+        LogPath    string `cmd:"log file write path"`
     }
-    cg.Add("c", func(req CReq) {
+    cg.Add("cc", func(req CReq) {
         fmt.Println("ccc", req.ConfigFile)
     })
     cg.Run()
