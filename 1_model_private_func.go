@@ -195,8 +195,7 @@ func (cmd *cmdGroup) printSubCommand() {
 func (cmd *cmdGroup) subNameSlice() []string {
     var nameSlice []string
     for name := range cmd.logicMap {
-        if name == commandSetUpAutoComplete ||
-            name == commandAutoComplete {
+        if name == commandAutoComplete {
             continue
         }
         nameSlice = append(nameSlice, name)
